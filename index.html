@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuwa Call • Video Meetings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --primary: #3b82f6;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .video-tile {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            aspect-ratio: 16 / 9;
+        }
+
+        .video-tile:hover {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .video-tile video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #111;
+        }
+
+        .video-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%);
+            transition: opacity 0.2s ease;
+        }
+
+        .control-btn {
+            transition: all 0.1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn.muted {
+            background-color: #ef4444 !important;
+            color: white;
+        }
+
+        .video-grid {
+            display: grid;
+            gap: 12px;
+            padding: 16px;
+            height: 100%;
+            align-content: center;
+        }
+
+        .chat-message {
+            animation: fadeInUp 0.2s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .participant-label {
+            font-size: 13px;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+        }
+
+        .section-header {
+            letter-spacing: -.025em;
+        }
+
+        .zoom-blue {
+            color: #3b82f6;
+        }
+
+        .meeting-timer {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tile-avatar {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white">
+    <!-- JOIN SCREEN -->
+    <div id="join-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-md">
+            <!-- Logo / Brand -->
+            <div class="flex items-center justify-center gap-x-3 mb-8">
+                <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-video text-white text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-4xl font-semibold tracking-tighter">Tuwa Call</h1>
+                    <p class="text-zinc-400 text-sm -mt-1">Secure video meetings</p>
+                </div>
+            </div>
+
+            <!-- Join Card -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-semibold tracking-tight">Join a meeting</h2>
+                    <p class="text-zinc-400 mt-1.5 text-sm">Enter your details to get started</p>
+                </div>
+
+                <div class="space-y-5">
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-400 mb-1.5">Your name</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-4 top-3.5 text-zinc-500"></i>
+                            <input id="user-name" 
+                                   type="text" 
+                                   value="Tuwa User"
+                                   class="w-full bg-zinc-950 border border-zinc-700 focus:border-blue-600 transition-colors pl-11 pr-4 py-3 rounded-2xl text-white placeholder-zinc-500 focus:outline-none"
+                                   placeholder="Enter your display name">
+                        </div>
+                    </div>
+
+                    <!-- Room ID -->
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-400 mb-1.5">Meeting ID</label>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <i class="fa-solid fa-hashtag absolute left-4 top-3.5 text-zinc-500"></i>
+                                <input id="room-id" 
+                                       type="text" 
+                                       value=""
+                                       class="w-full bg-zinc-950 border border-zinc-700 focus:border-blue-600 transition-colors pl-11 pr-4 py-3 rounded-2xl text-white placeholder-zinc-500 focus:outline-none font-mono tracking-widest"
+                                       placeholder="e.g. A7K9P2">
+                            </div>
+                            <button onclick="generateRoomId()"
+                                    class="px-5 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 transition-colors border border-zinc-700 rounded-2xl text-sm font-medium flex items-center gap-x-2">
+                                <i class="fa-solid fa-sync-alt"></i>
+                                <span class="hidden sm:inline">New</span>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-zinc-500 mt-1.5 px-1">Share this ID with others to join the same meeting</p>
+                    </div>
+                </div>
+
+                <!-- Join Button -->
+                <button onclick="joinMeeting()"
+                        class="mt-8 w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition-all py-4 rounded-2xl font-semibold text-lg flex items-center justify-center gap-x-3 shadow-lg shadow-blue-600/30">
+                    <i class="fa-solid fa-video"></i>
+                    <span>Join Meeting</span>
+                </button>
+
+                <div class="mt-6 text-center">
+                    <div class="flex items-center justify-center gap-x-2 text-xs text-zinc-500">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>End-to-end encrypted • No account needed</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-zinc-500 mt-8">
+                Built with WebRTC &amp; Socket.IO • Demo for educational use
+            </p>
+        </div>
+    </div>
+
+    <!-- CALL SCREEN -->
+    <div id="call-screen" class="hidden min-h-screen flex flex-col bg-zinc-950">
+        <!-- Top Header Bar -->
+        <div class="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6 flex-shrink-0 z-50">
+            <div class="flex items-center gap-x-4">
+                <!-- Brand -->
+                <div class="flex items-center gap-x-2.5">
+                    <div class="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-video text-white text-lg"></i>
+                    </div>
+                    <span class="font-display text-xl font-semibold tracking-tighter">Tuwa Call</span>
+                </div>
+
+                <!-- Meeting Info -->
+                <div class="flex items-center gap-x-3 pl-4 border-l border-zinc-800">
+                    <div>
+                        <div class="flex items-center gap-x-2">
+                            <span id="meeting-title" class="font-semibold text-lg tracking-tight">Meeting</span>
+                            <div id="participant-count-badge"
+                                 class="px-2.5 py-0.5 bg-zinc-800 text-zinc-300 text-xs font-medium rounded-full flex items-center gap-x-1">
+                                <i class="fa-solid fa-users text-[10px]"></i>
+                                <span id="participant-count">1</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-x-1.5 text-xs">
+                            <span id="room-id-display" class="font-mono text-blue-400 tracking-[2px]"></span>
+                            <button onclick="copyRoomId()" 
+                                    class="text-zinc-400 hover:text-white transition-colors p-1 -m-1"
+                                    title="Copy meeting ID">
+                                <i class="fa-solid fa-copy text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-x-4">
+                <!-- Timer -->
+                <div class="hidden md:flex items-center gap-x-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-2xl text-sm">
+                    <i class="fa-solid fa-clock text-emerald-400"></i>
+                    <span id="meeting-timer" class="font-mono tabular-nums meeting-timer font-medium">00:00</span>
+                </div>
+
+                <!-- Security Badge -->
+                <div class="hidden lg:flex items-center gap-x-2 text-xs px-3 py-1 bg-emerald-900/30 text-emerald-400 border border-emerald-800 rounded-2xl">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                    <span class="font-medium">Secured</span>
+                </div>
+
+                <!-- Leave Button (small in header on mobile) -->
+                <button onclick="leaveMeeting()" 
+                        class="md:hidden px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2 transition-colors">
+                    <i class="fa-solid fa-phone-slash"></i>
+                    <span>Leave</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex flex-1 overflow-hidden">
+            
+            <!-- Video Grid Area -->
+            <div class="flex-1 flex flex-col min-w-0" id="video-area">
+                <div id="video-grid" 
+                     class="video-grid flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 p-4 content-center bg-zinc-950">
+                    <!-- Video tiles dynamically inserted here by JS -->
+                </div>
+                
+                <!-- Screen Share Banner -->
+                <div id="screen-share-banner" class="hidden mx-4 mb-4 px-4 py-2.5 bg-blue-600/90 text-white rounded-2xl flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-x-3">
+                        <i class="fa-solid fa-desktop"></i>
+                        <span class="font-medium">You are sharing your screen</span>
+                    </div>
+                    <button onclick="stopScreenShare()" 
+                            class="px-4 py-1 bg-white/20 hover:bg-white/30 transition-colors text-xs font-semibold rounded-xl">
+                        STOP SHARING
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Sidebar -->
+            <div id="chat-sidebar" class="hidden w-80 border-l border-zinc-800 bg-zinc-900 flex flex-col flex-shrink-0">
+                <!-- Chat Header -->
+                <div class="h-14 px-5 flex items-center justify-between border-b border-zinc-800 flex-shrink-0">
+                    <div class="flex items-center gap-x-3">
+                        <i class="fa-solid fa-comments text-blue-400"></i>
+                        <span class="font-semibold">Chat</span>
+                    </div>
+                    <button onclick="toggleChat()" class="text-zinc-400 hover:text-white p-2 -mr-2">
+                        <i class="fa-solid fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Messages -->
+                <div id="chat-messages" 
+                     class="flex-1 p-5 space-y-4 overflow-y-auto text-sm custom-scroll">
+                    <!-- Messages populated by JS -->
+                </div>
+
+                <!-- Chat Input -->
+                <div class="p-4 border-t border-zinc-800 flex-shrink-0 bg-zinc-900">
+                    <div class="flex gap-2">
+                        <input id="chat-input" 
+                               type="text" 
+                               placeholder="Type a message..."
+                               onkeypress="if (event.key === 'Enter') sendChatMessage()"
+                               class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-blue-600 px-4 py-3 text-sm rounded-2xl focus:outline-none placeholder:text-zinc-500">
+                        <button onclick="sendChatMessage()" 
+                                class="px-5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition-colors rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Control Toolbar -->
+        <div class="h-[78px] bg-zinc-900 border-t border-zinc-800 flex items-center justify-center px-6 flex-shrink-0 z-50">
+            <div class="flex items-center gap-x-2 md:gap-x-3">
+                
+                <!-- Mic -->
+                <button id="mic-btn"
+                        onclick="toggleMicrophone()"
+                        class="control-btn bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700">
+                    <i class="fa-solid fa-microphone text-xl mb-0.5"></i>
+                    <span class="text-[10px] font-medium tracking-tight">Mute</span>
+                </button>
+
+                <!-- Camera -->
+                <button id="camera-btn"
+                        onclick="toggleCamera()"
+                        class="control-btn bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700">
+                    <i class="fa-solid fa-video text-xl mb-0.5"></i>
+                    <span class="text-[10px] font-medium tracking-tight">Stop Video</span>
+                </button>
+
+                <!-- Screen Share -->
+                <button id="screen-btn"
+                        onclick="toggleScreenShare()"
+                        class="control-btn bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 px-5">
+                    <i class="fa-solid fa-desktop text-xl mb-0.5"></i>
+                    <span class="text-[10px] font-medium tracking-tight">Share</span>
+                </button>
+
+                <!-- Chat -->
+                <button onclick="toggleChat()"
+                        class="control-btn bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 relative">
+                    <i class="fa-solid fa-comments text-xl mb-0.5"></i>
+                    <span class="text-[10px] font-medium tracking-tight">Chat</span>
+                </button>
+
+                <!-- Spacer -->
+                <div class="w-px h-9 bg-zinc-700 mx-2"></div>
+
+                <!-- Leave Call -->
+                <button onclick="leaveMeeting()"
+                        class="control-btn bg-red-600 hover:bg-red-500 text-white px-7 shadow-inner">
+                    <i class="fa-solid fa-phone-slash text-xl mb-0.5"></i>
+                    <span class="text-[10px] font-semibold tracking-tight">Leave</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast / Notification -->
+    <div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-5 py-2.5 rounded-2xl shadow-xl text-sm flex items-center gap-x-2 z-[100]">
+        <i class="fa-solid fa-info-circle text-blue-400"></i>
+        <span id="toast-text"></span>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
